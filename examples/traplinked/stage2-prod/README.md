@@ -57,7 +57,7 @@ The device cluster must have:
 ```
 meta.unpacker = "com.traplinked.trap.JERRY.Decoder"
 meta.type     = "com.traplinked.trap.JERRY.Decoder"
-meta.location = "Customer Name,trap"    ← comma-separated global tags
+meta.location = "Customer Name,trap"    ← the ,trap suffix is REQUIRED (Metrics app filters by it)
 facts.usecase = "SC05"
 network       = "com.traplinked.api"
 ```

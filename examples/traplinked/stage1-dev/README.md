@@ -5,12 +5,15 @@
 ## Setup
 
 1. **Create a device cluster** in Composer on `io.microshare.traplinked.packed`
-   - Set `meta.location` to `"Your Identity Name,trap"` (comma-separated global tags)
+   - Set `meta.location` to `"Your Identity Name,trap"` (comma-separated global tags).
+     The `,trap` suffix is **required** — the Metrics app filters data by `dataContext: ["trap"]`
+     and will not display alerts or incidents unless `trap` appears in the record's global tags.
+     The Robot reads this field from the cluster and splits on commas to build `meta.global`.
    - Set `facts.usecase` to `SC05`
    - Set `network` to `com.traplinked.api`
    - Register each device with its serial number as the device ID
    - Set location tags: `["Customer", "Site", "Trap Name", "SerialNumber"]`
-   - Avoid commas in location tags
+   - Avoid commas in **device** location tags (commas in `meta.location` are intentional — they separate global tags)
 
 2. **Deploy the Poller Robot** (`poller-robot.js`)
    - Trigger recType: `io.microshare.traplinked.packed`
