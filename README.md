@@ -105,6 +105,56 @@ if (!bindings.lastTimestamp) {
 
 If the vendor supports webhooks, prefer them over polling. Webhooks push each event exactly once to a Microshare pipe token URL, eliminating the dedup problem entirely. See the [Taqt example](examples/taqt/) for the webhook pattern.
 
+## Device Health
+
+The Microshare dashboard shows battery level, connectivity, and last-seen time for each device. This data comes from `io.microshare.device.health` records — a separate recType from the unpacked sensor data.
+
+For LoRaWAN devices, the Scala pipeline writes health records automatically from the decoded payload (voltage, temperature, RSSI). For REST-polled devices, your Robot needs to write these explicitly.
+
+### Writing device health from your Robot
+
+On each poll cycle, write a `io.microshare.device.health` record alongside your unpacked records:
+
+```javascript
+var healthRecord = {
+    id: device.serial_number,
+    charge: [{ unit: '%', value: batteryPercent }],
+    voltage: [{ unit: 'V', value: null }],       // null if not available from vendor API
+    temperature: [{ unit: '°C', value: null }],   // null if not available
+    meta: unpacked.meta,                           // same meta as the unpacked record
+    origin: { deviceClusterId: clusterId }
+};
+lib.writeShare(auth, 'io.microshare.device.health', healthRecord, tags);
+```
+
+### What to map from the vendor API
+
+| Health field | What to map | Source |
+|---|---|---|
+| `charge` | Battery level as % | Most APIs provide this directly or as a 0.0-1.0 ratio |
+| `voltage` | Raw voltage if available | LoRaWAN decoders provide this; REST APIs usually don't — use `null` |
+| `temperature` | Device temperature if available | Use `null` if the API doesn't expose it |
+| `last_seen` | When the device last communicated | Map from `lastHeartbeat`, `lastActive`, `lastSeen`, or similar |
+| `connection` | Connection type or signal quality | WiFi/LoRa/cellular — whatever the API provides |
+| `status` | Device operational status | Map from the vendor's status code |
+
+### Tracking missed messages (offline detection)
+
+LoRaWAN devices report RSSI/SNR for signal quality, but REST-polled devices don't have that. Instead, use the **last seen timestamp** to detect offline devices:
+
+- Every vendor API has some form of "last heartbeat" or "last active" timestamp
+- Write it to `last_seen` in the health record on every poll
+- The dashboard can flag devices where `now - last_seen` exceeds the expected reporting interval
+- For the Traplinked JERRY (WiFi), the expected heartbeat is every few hours. If `last_heartbeat` is more than 24 hours old, the device is likely offline
+
+### Key points
+
+- Write health records **once per poll cycle**, not per event — health is a device snapshot, not an event
+- Include `null` for fields the vendor API doesn't provide — the dashboard handles missing data gracefully
+- The `meta` structure must match the unpacked record (same `dc.id`, `device` tags, `global` tags) for the dashboard to associate health with the right device
+- Health records need `meta.global` to include your use case tag (e.g. `"trap"`) for the dashboard's `dataContext` filter
+- Don't try to fabricate LoRaWAN metrics (RSSI, SNR, spreading factor) for non-LoRaWAN devices — provide what the vendor API actually gives you
+
 ## Device Cluster Twinning
 
 A key part of producing correct unpacked records is **twinning** — attaching location metadata to each device.
