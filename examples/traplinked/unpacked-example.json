@@ -1,0 +1,70 @@
+{
+  "meta": {
+    "iot": {
+      "device_id": "8VUD57F0",
+      "time": "2026-03-25T14:30:00.000Z",
+      "iso_time": "2026-03-25T14:30:00.000Z",
+      "type": "poll",
+      "ns_version": "v1.0"
+    },
+    "device": [
+      "Bois Met",
+      "17 Rue du Bois Met, Dinard",
+      "Jerry3 Mouse linebox",
+      "8VUD57F0"
+    ],
+    "dc": {
+      "id": "69c41836c51eeabc27ca3710",
+      "name": "Traplinked JERRY Demo",
+      "network": "com.traplinked",
+      "recType": "io.microshare.traplinked.packed",
+      "unpacker": "robot.traplinked.poller",
+      "usecase": "trap",
+      "facts": { "usecase": "trap" }
+    },
+    "global": [],
+    "source": []
+  },
+
+  "trap": [
+    { "value": true, "context": "Trap 1" },
+    { "value": false, "context": "Trap 2" }
+  ],
+
+  "trap_event": [
+    { "value": "trap_triggered" }
+  ],
+
+  "trap_mode": [
+    { "value": "snaptrap" }
+  ],
+
+  "device_health": {
+    "id": "8VUD57F0",
+    "charge": [{ "unit": "%", "value": 85 }],
+    "connection": [{ "value": "wifi" }],
+    "last_seen": [{ "value": "2026-03-25T14:25:00.000Z" }],
+    "status": [{ "value": 1 }]
+  },
+
+  "origin": {
+    "traplinked": {
+      "serial_number": "8VUD57F0",
+      "name": "Jerry3 Mouse linebox",
+      "device_type": "JERRY",
+      "report_type": 2,
+      "report_name": "trap_triggered",
+      "report_user": null,
+      "report_description": null,
+      "status": 1,
+      "transfer_mode": 0,
+      "operation_mode": 0,
+      "last_heartbeat": "2026-03-25T14:25:00.000Z",
+      "location": {
+        "name": "Bois Met",
+        "address": "17 Rue du Bois Met, Dinard"
+      }
+    },
+    "deviceClusterId": "69c41836c51eeabc27ca3710"
+  }
+}
