@@ -147,13 +147,36 @@ LoRaWAN devices report RSSI/SNR for signal quality, but REST-polled devices don'
 - The dashboard can flag devices where `now - last_seen` exceeds the expected reporting interval
 - For the Traplinked JERRY (WiFi), the expected heartbeat is every few hours. If `last_heartbeat` is more than 24 hours old, the device is likely offline
 
+### The `fcnt_up` counter — critical for "Last Seen"
+
+The dashboard relies on a monotonically increasing `meta.iot.fcnt_up` counter to identify the most recent record per device. LoRaWAN devices have this natively (it's the LoRaWAN frame counter). For REST-polled devices, your Robot must provide one.
+
+Without `fcnt_up`, the dashboard's "Last Seen" may show stale data even when fresh records exist.
+
+```javascript
+// Initialize in bindings
+if (!bindings.fcntUp) bindings.fcntUp = 0;
+
+// Increment on every write (both unpacked and health)
+meta: {
+    iot: {
+        device_id: device.serial_number,
+        time: new Date().toISOString(),
+        fcnt_up: ++bindings.fcntUp,   // always increasing
+        type: 'poll',
+        ns_version: 'v1.0'
+    }
+}
+```
+
 ### Key points
 
-- Write health records **once per poll cycle**, not per event — health is a device snapshot, not an event
+- Write health records at a reasonable interval (every 10 minutes, not every poll) — throttle with a timer in `bindings`
 - Include `null` for fields the vendor API doesn't provide — the dashboard handles missing data gracefully
 - The `meta` structure must match the unpacked record (same `dc.id`, `device` tags, `global` tags) for the dashboard to associate health with the right device
 - Health records need `meta.global` to include your use case tag (e.g. `"trap"`) for the dashboard's `dataContext` filter
-- Don't try to fabricate LoRaWAN metrics (RSSI, SNR, spreading factor) for non-LoRaWAN devices — provide what the vendor API actually gives you
+- Always include `meta.iot.fcnt_up` as an incrementing counter — without it, "Last Seen" won't update correctly
+- Don't fabricate LoRaWAN metrics (RSSI, SNR, spreading factor) — provide what the vendor API actually gives you. Empty columns are fine.
 
 ## Device Cluster Twinning
 
