@@ -4,17 +4,17 @@ How to configure an external device platform to send data into Microshare.
 
 ## The Pipe Token URL
 
-Every device platform that supports webhooks needs a destination URL. Microshare provides this via a **pipe token** — a permanent URL that accepts POST requests without any authentication header.
+Every device platform that supports webhooks needs a destination URL. Microshare provides this via a **pipe token** — a write-only URL that accepts POST requests without any authentication header.
 
 ```
-https://dapi.microshare.io/share/{recType}/token/{pipeToken}
+https://{ingestHost}/share/{recType}/token/{pipeToken}
 ```
 
-| Part | What it is | Example |
-|---|---|---|
-| Base URL | Microshare API (dev or prod) | `https://dapi.microshare.io` |
-| `{recType}` | Your packed recType | `io.microshare.trap.packed` |
-| `{pipeToken}` | Write-only token | `a1b2c3d4e5f6...` |
+| Part | What it is | Dev | Prod |
+|---|---|---|---|
+| `{ingestHost}` | Microshare ingest endpoint | `dingest.microshare.io` or `dapi.microshare.io` | `ingest.microshare.io` or `api.microshare.io` |
+| `{recType}` | Your packed recType | `io.microshare.trap.packed` | `io.microshare.trap.packed` |
+| `{pipeToken}` | Write-only token (64-char hex) | generated below | generated below |
 
 The device platform POSTs JSON to this URL. No `Authorization` header, no API key header — the token in the URL is the credential.
 
@@ -34,21 +34,48 @@ Check with Microshare for the correct production recType for your deployment.
 
 ### 2. Generate a pipe token
 
-Log in to [dapp.microshare.io](https://dapp.microshare.io) (dev) or [app.microshare.io](https://app.microshare.io) (prod):
+**Option A: via the Composer UI**
 
-1. Go to **Manage → Keys → Tokens**
-2. Create a new pipe token (write-only, no expiry)
-3. Copy the token value
+1. Log in to [dapp.microshare.io](https://dapp.microshare.io) (dev) or [app.microshare.io](https://app.microshare.io) (prod)
+2. Go to **Manage → Keys → Tokens**
+3. Create a new pipe token (write-only, no expiry)
+4. Copy the token value
+
+**Option B: via the OAuth2 API**
+
+Request a token with scope `SHARE:WRITE` instead of the usual `ALL:ALL`. This produces a write-only token suitable for use as a pipe token.
+
+```bash
+curl -X POST "https://dauth.microshare.io/oauth2/token" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "grant_type=password&username=YOUR_USER&password=YOUR_PASS&client_id=YOUR_API_KEY&scope=SHARE:WRITE"
+```
+
+The response contains the pipe token:
+
+```json
+{
+  "access_token": "42ee7050344d3b06...64-char hex...",
+  "extended": {
+    "identity": "your-identity-uuid",
+    "identityname": "Your Identity Name"
+  }
+}
+```
+
+For dev, use `dauth.microshare.io`. For prod, use `auth.microshare.io`.
+
+Your `client_id` is the API key from **Manage → Keys** in the Composer UI.
 
 ### 3. Build the webhook URL
 
-Combine the three parts:
+Combine the ingest host, recType, and token:
 
 ```
-https://dapi.microshare.io/share/io.microshare.trap.packed/token/YOUR_PIPE_TOKEN_HERE
+https://dingest.microshare.io/share/io.microshare.trap.packed/token/YOUR_PIPE_TOKEN_HERE
 ```
 
-For production, use `https://api.microshare.io` instead of `dapi`.
+For production, use `ingest.microshare.io` instead of `dingest`.
 
 ### 4. Configure the device platform
 
@@ -60,7 +87,7 @@ You can test without the device platform — just POST directly:
 
 ```bash
 curl -X POST \
-  "https://dapi.microshare.io/share/io.microshare.trap.packed/token/$PIPE_TOKEN" \
+  "https://dingest.microshare.io/share/io.microshare.trap.packed/token/$PIPE_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "event": {
@@ -99,7 +126,8 @@ Once data is flowing to the packed recType, [deploy a Robot](../example/README.m
 
 ## Security Notes
 
-- Pipe tokens are **permanent** — they don't expire. Revoke them in Manage → Keys if compromised.
-- Prefer **write-only pipe tokens** (from the UI) over OAuth2 `ALL:ALL` tokens for production webhooks.
+- Pipe tokens are **write-only** — they cannot read data from the platform.
 - The pipe URL is the only credential the vendor needs — don't share your Microshare login.
-- Use HTTPS only — `dapi.microshare.io` and `api.microshare.io` enforce TLS.
+- Revoke tokens in **Manage → Keys** if compromised.
+- Use HTTPS only — all Microshare endpoints enforce TLS.
+- `dingest.microshare.io` and `dapi.microshare.io` both work for dev; `ingest.microshare.io` and `api.microshare.io` for prod.

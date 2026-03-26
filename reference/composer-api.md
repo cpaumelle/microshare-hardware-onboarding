@@ -90,11 +90,19 @@ Use `page=N&perPage=N` (default perPage: 999). Sort with `sort=-tstamp` (prefix 
 For external device platforms to POST data without sharing credentials:
 
 ```
-POST https://dapi.microshare.io/share/{recType}/token/{pipeToken}
+POST https://dingest.microshare.io/share/{recType}/token/{pipeToken}
 Content-Type: application/json
 ```
 
-Generate pipe tokens in the Composer UI: **Manage -> Keys -> Tokens**.
+Generate pipe tokens via the Composer UI (**Manage -> Keys -> Tokens**) or via the OAuth2 API with `SHARE:WRITE` scope:
+
+```bash
+curl -X POST "https://dauth.microshare.io/oauth2/token" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "grant_type=password&username=YOU&password=PASS&client_id=YOUR_API_KEY&scope=SHARE:WRITE"
+```
+
+See [`webhook-ingest.md`](webhook-ingest.md) for the full setup guide.
 
 ---
 
