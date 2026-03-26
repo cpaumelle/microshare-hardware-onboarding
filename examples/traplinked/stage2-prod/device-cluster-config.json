@@ -1,0 +1,31 @@
+{
+  "name": "Traplinked JERRY",
+  "recType": "io.microshare.traplinked.packed",
+  "data": {
+    "isActive": true,
+    "targetRecType": "io.microshare.trap.unpacked",
+    "meta": {
+      "location": "Customer Name,trap",
+      "type": "com.traplinked.trap.JERRY.Decoder",
+      "unpacker": "com.traplinked.trap.JERRY.Decoder"
+    },
+    "network": {
+      "network": "com.traplinked.api",
+      "region": "EU868",
+      "version": "v1.1",
+      "JoinEUI": "",
+      "isAutoRegister": false
+    },
+    "facts": {
+      "usecase": "SC05"
+    },
+    "devices": [
+      {
+        "id": "SERIAL_NUMBER",
+        "meta": {
+          "location": ["Customer", "Site Address", "Trap Name", "SERIAL_NUMBER"]
+        }
+      }
+    ]
+  }
+}

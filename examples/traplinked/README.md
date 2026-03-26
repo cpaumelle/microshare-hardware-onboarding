@@ -1,68 +1,80 @@
-# Traplinked JERRY — Scheduled Poller Robot
+# Traplinked JERRY — Hardware Onboarding
 
-A Microshare Robot that polls the [Traplinked REST API](https://docs.traplinked.com/rest/) for trap events and writes standard `io.microshare.trap.unpacked` records.
+Onboarding the [Traplinked](https://docs.traplinked.com/rest/) JERRY snap trap into the Microshare pest management platform.
+
+## Two-Stage Approach
+
+### Stage 1: Dev / Evaluation (Robot-only)
+
+Everything runs in Composer — no Scala, no platform deployment. Deploy in minutes, test with real hardware immediately.
+
+```
+Traplinked API  ──poll──>  Poller Robot  ──write──>  traplinked.packed
+                                │                    trap.unpacked
+                                │                    device.health
+                                │
+                           Alert Generator Robot  ──>  event.alert.rodent
+                                                          │
+                                                   ES Pest Bundler  ──>  incident
+```
+
+**Two Robots:**
+- **Poller Robot** (scheduled 60s) — polls Traplinked API, writes packed + unpacked + health
+- **Alert Generator Robot** (triggered) — converts trap events into rodent alerts
+
+See [`stage1-dev/`](stage1-dev/) for code, setup, and deployment instructions.
+
+### Stage 2: Production (Scala pipeline)
+
+The Poller Robot stays (it replaces the LoRaWAN network server). The Scala pipeline replaces the unpacking, health, and alert generation.
+
+```
+Traplinked API  ──poll──>  Poller Robot  ──write──>  traplinked.packed
+                                                          │
+                                                   Scala Decoder  ──>  trap.unpacked
+                                                          │               device.health
+                                                          │
+                                                   Scala EventHandler  ──>  event.alert.rodent
+                                                                               │
+                                                                        ES Pest Bundler  ──>  incident
+```
+
+**Components:**
+- **Poller Robot** (scheduled 60s) — writes packed only
+- **TraplinkedDecoder.scala** — maps packed → unpacked + health
+- **TraplinkedEventHandler.scala** — generates alerts from trap events
+
+See [`stage2-prod/`](stage2-prod/) for Scala code, device cluster config, and migration guide.
 
 ## Device
 
-The **JERRY** is a WiFi/LoRa snap trap with two independent traps per unit. Traplinked devices communicate through their own platform — the LoRaWAN layer is fully abstracted behind their REST API. There is no raw payload or RF metadata available.
+The **JERRY** is a WiFi/LoRa snap trap with two independent traps per unit. Traplinked devices communicate through their own cloud platform — the LoRaWAN layer is fully abstracted behind their REST API.
 
-Device types supported: JERRY, JERRY_LORA, TRAPME, TOM, TRAPSENSOR.
+Device types: JERRY, JERRY_LORA, TRAPME, TOM, TRAPSENSOR.
 
-## How it works
+## Record Types
 
-```
-Traplinked Cloud API  ──poll──>  Robot  ──write──>  io.microshare.trap.unpacked
-                                   │
-                         Device cluster (twin)
-                      io.microshare.traplinked.packed
-```
+| recType | Written by | Purpose |
+|---|---|---|
+| `io.microshare.traplinked.packed` | Poller Robot | Raw Traplinked API data |
+| `io.microshare.trap.unpacked` | Robot (Stage 1) or Decoder (Stage 2) | Standard unpacked record |
+| `io.microshare.device.health` | Robot (Stage 1) or Decoder (Stage 2) | Battery, voltage, last seen |
+| `io.microshare.event.alert.rodent` | Alert Robot (Stage 1) or EventHandler (Stage 2) | Rodent alerts |
 
-1. **Poll**: Robot calls `GET /api/v1.9/devices` with `reports_since` to fetch new events
-2. **Twin**: Robot reads the device cluster via `httpGet` to `/device/` API for location tags
-3. **Map**: Builds standard unpacked record with sensor fields, device health, and origin
-4. **Write**: `lib.writeShare(auth, recType, data, tags)` to `io.microshare.trap.unpacked`
-5. **Dedup**: High-water mark on report timestamp (+1 second) to avoid re-processing events across poll cycles. See the [dedup guide](../../README.md#deduplication-poll-based-robots) for details.
+## Event Types
 
-## Unpacked record structure
+| Traplinked event | Alert event | Action |
+|---|---|---|
+| `catch_detected` | `rodent_caught` | Site visit: retrieve + rearm |
+| `trap_triggered` | `rodent_present` | Site visit: check + rearm |
+| `false_triggering` | `trap_false_trigger` | Site visit: rearm |
+| `infested` | `rodent_infestation` | Monitoring alert |
+| `light_infestation` | `rodent_light_infestation` | Monitoring alert |
+| `severe_infestation` | `rodent_severe_infestation` | Urgent response |
+| `activity_warning` | `rodent_activity_warning` | Threshold warning |
+| `activity_critical` | `rodent_activity_critical` | Threshold critical |
+| `rearmed` | — | No alert (no action needed) |
+
+## Unpacked Record Structure
 
 See [unpacked-example.json](unpacked-example.json) for a full example.
-
-| Section | Content |
-|---|---|
-| `meta.iot` | Device ID, timestamp, `type: "poll"` (no RF data — REST-polled) |
-| `meta.device` | Location tags from device cluster twin |
-| `meta.dc` | Cluster metadata: `network: "com.traplinked"` |
-| `trap` | Dual trap state: `[{value, context: "Trap 1"}, {value, context: "Trap 2"}]` |
-| `trap_event` | Report type: `trap_triggered`, `rearmed`, `catch_detected`, etc. |
-| `trap_mode` | Operation mode: `snaptrap`, `movement`, or `insect` |
-| `device_health` | Battery %, connection type (wifi/lora), last heartbeat, device status |
-| `origin` | Full Traplinked API response preserved for debugging |
-
-## Report types
-
-| Code | Name | Description |
-|---|---|---|
-| 2 | `trap_triggered` | Trap mechanism fired |
-| 3 | `rearmed` | Trap reset by user |
-| 14 | `infested` | Infestation detected |
-| 15 | `light_infestation` | Light infestation level |
-| 16 | `severe_infestation` | Severe infestation level |
-| 17 | `false_triggering` | False trigger (no catch) |
-| 18 | `activity_warning` | Activity warning threshold |
-| 19 | `activity_critical` | Activity critical threshold |
-| 20 | `catch_detected` | Confirmed catch |
-
-## Setup
-
-1. Create a device cluster in Composer on `io.microshare.traplinked.packed`
-2. Register each device with its serial number as the device ID
-3. Set location tags on each device in the cluster
-4. Replace `TL_TOKEN` and `TL_DEVICE_ID` in the robot config
-5. Deploy as a scheduled robot (60s interval)
-
-## Traplinked API
-
-- **Base**: `https://api.traplinked.com/api/v1.9`
-- **Auth**: Bearer token (API key from Traplinked dashboard)
-- **Docs**: https://docs.traplinked.com/rest/
-- **Device fields**: serial_number, name, type, status, battery_status, transfer_mode, operation_mode, last_heartbeat, location, trap_1, trap_2, reports
