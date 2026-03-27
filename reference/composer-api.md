@@ -234,3 +234,52 @@ The View returns raw MongoDB documents. Record data is at `objs[].data.data`, ow
 ### Pipe token URL: use `dapi`, not `dingest`
 
 For dev, use `dapi.microshare.io` in the pipe token URL. Records written via `dingest.microshare.io` land in a separate store that is not readable through the standard Share API or Views.
+
+---
+
+## Workflow API (Incident Lifecycle)
+
+Incidents created by the bundler have a workflow process. To transition an incident through its lifecycle (accept → do → done), use the workflow API.
+
+### Host
+
+The workflow engine is on a **separate host** from the Share API:
+
+| Environment | Workflow Host |
+|---|---|
+| Dev (dapp) | `https://dwf.microshare.io` |
+| Prod (pest) | `https://pest.microshare.io/wf` (same host, `/wf` prefix) |
+| Prod (app) | `https://wf.microshare.io` |
+
+On dev, do **not** use `dapp.microshare.io/wf/` — it returns 404 for POST requests.
+
+### Transition an incident
+
+```bash
+curl -X POST "https://dwf.microshare.io/processes/{processId}/message/addUser?Authorization=$TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "addUser_by": "user@example.com",
+    "addUser_action": "claimee",
+    "addUser_user": "user@example.com",
+    "addUser_time": "2026-03-27T12:00:00.000Z",
+    "addUser_userTask": "accept"
+  }'
+```
+
+Steps in order: `accept` → `do` → `done`. Send one request per step.
+
+The `processId` is found in the incident record at `data.meta.workflow.process.id`.
+
+---
+
+## API Hosts Summary
+
+| Service | Dev | Prod (pest) |
+|---|---|---|
+| App / Login | `dapp.microshare.io` | `pest.microshare.io` |
+| Share API | `dapi.microshare.io` | `pest.microshare.io/api` |
+| Auth (OAuth2) | `dauth.microshare.io` | `pest.microshare.io` |
+| Workflow | `dwf.microshare.io` | `pest.microshare.io/wf` |
+| Images | `dimages.microshare.io` | `images.microshare.io` |
+| Ingest (pipe) | `dapi.microshare.io` | `api.microshare.io` |
