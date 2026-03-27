@@ -12,7 +12,7 @@ https://{ingestHost}/share/{recType}/token/{pipeToken}
 
 | Part | What it is | Dev | Prod |
 |---|---|---|---|
-| `{ingestHost}` | Microshare ingest endpoint | `dingest.microshare.io` or `dapi.microshare.io` | `ingest.microshare.io` or `api.microshare.io` |
+| `{ingestHost}` | Microshare API endpoint | `dapi.microshare.io` | `api.microshare.io` |
 | `{recType}` | Your packed recType | `io.microshare.trap.packed` | `io.microshare.trap.packed` |
 | `{pipeToken}` | Write-only token (64-char hex) | generated below | generated below |
 
@@ -72,10 +72,10 @@ Your `client_id` is the API key from **Manage → Keys** in the Composer UI.
 Combine the ingest host, recType, and token:
 
 ```
-https://dingest.microshare.io/share/io.microshare.trap.packed/token/YOUR_PIPE_TOKEN_HERE
+https://dapi.microshare.io/share/io.microshare.trap.packed/token/YOUR_PIPE_TOKEN_HERE
 ```
 
-For production, use `ingest.microshare.io` instead of `dingest`.
+For production, use `api.microshare.io` instead of `dapi`.
 
 ### 4. Configure the device platform
 
@@ -87,7 +87,7 @@ You can test without the device platform — just POST directly:
 
 ```bash
 curl -X POST \
-  "https://dingest.microshare.io/share/io.microshare.trap.packed/token/$PIPE_TOKEN" \
+  "https://dapi.microshare.io/share/io.microshare.trap.packed/token/$PIPE_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "event": {
@@ -130,4 +130,4 @@ Once data is flowing to the packed recType, [deploy a Robot](../example/README.m
 - The pipe URL is the only credential the vendor needs — don't share your Microshare login.
 - Revoke tokens in **Manage → Keys** if compromised.
 - Use HTTPS only — all Microshare endpoints enforce TLS.
-- `dingest.microshare.io` and `dapi.microshare.io` both work for dev; `ingest.microshare.io` and `api.microshare.io` for prod.
+- For dev, use `dapi.microshare.io`. For prod, use `api.microshare.io`. Do **not** use `dingest` or `ingest` hostnames — records written via those endpoints are stored separately and cannot be read through the Share API or Views.

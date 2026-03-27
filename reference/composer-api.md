@@ -190,7 +190,47 @@ See the [Traplinked example](../examples/traplinked/robot.js) for a complete imp
 
 ## Views
 
+### List / Get
+
 ```bash
 curl -s "https://dapi.microshare.io/view/*" -H "Authorization: Bearer $TOKEN"
 curl -s "https://dapi.microshare.io/view/{recType}/{viewId}" -H "Authorization: Bearer $TOKEN"
 ```
+
+### Create a View
+
+```bash
+curl -X POST "https://dapi.microshare.io/view/io.microshare.trap.packed" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Latest Packed Records",
+    "desc": "Recent trap.packed data",
+    "recType": "io.microshare.trap.packed",
+    "data": {
+      "query": "[{\"$match\": {\"tstamp\": {\"$gt\": EPOCH_MILLIS}}}, {\"$limit\": 10}]",
+      "fieldMapping": "[]"
+    }
+  }'
+```
+
+### Execute a View (read data through it)
+
+Views bypass the policy engine — use them when direct share queries return `totalCount > 0` but `objs` is empty.
+
+```bash
+curl -s "https://dapi.microshare.io/share/{viewRecType}?id={viewId}&details=true" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+The View returns raw MongoDB documents. Record data is at `objs[].data.data`, owner at `objs[].data.owner`.
+
+### Important: View query performance
+
+- Always include `$limit` — Views without it will timeout on large collections
+- Filter by `tstamp` (epoch millis) to restrict the scan window
+- `$sort` on large collections can timeout — prefer `$match` + `$limit` over `$sort` + `$limit`
+
+### Pipe token URL: use `dapi`, not `dingest`
+
+For dev, use `dapi.microshare.io` in the pipe token URL. Records written via `dingest.microshare.io` land in a separate store that is not readable through the standard Share API or Views.
