@@ -12,17 +12,24 @@ For platforms that *do* offer webhooks, see [`examples/taqt/`](../taqt/) and [`e
 
 ## Architecture
 
+The Robot fits the standard Microshare **EXTRACT → MATCH → MAP** pipeline (see [`reference/pipeline-diagram.md`](../../reference/pipeline-diagram.md)) — it just runs the steps inside one scheduled Robot instead of split across NetworkServer + Decoder.
+
 ```mermaid
 flowchart LR
     API["Futura API<br/>(REST, token auth)"]
-    ROBOT["Scheduled Robot<br/>(every 60s)"]
+    DC[("Device Cluster<br/>com.futura.emitter.packed")]
+    ROBOT["Scheduled Robot (every 60s)<br/><b>EXTRACT</b> emitterId →<br/><b>MATCH</b> against cluster →<br/><b>MAP</b> to unpacked schema"]
     LAKE["Microshare Data Lake<br/><i>trap.unpacked</i>"]
 
     ROBOT -- "1. POST /login → X-Auth-Token" --> API
     ROBOT -- "2. GET /tms/events?startDate=…" --> API
-    ROBOT -- "3. lib.writeShare per new event" --> LAKE
+    ROBOT -- "3. lookup emitterId → location tags" --> DC
+    ROBOT -- "4. lib.writeShare per new event" --> LAKE
 
     BIND[("Robot bindings<br/>persistent state")] -.- ROBOT
+
+    style DC fill:#e8f4f8,stroke:#2196F3
+    style ROBOT fill:#fff3e0,stroke:#FF9800
 ```
 
 The Robot keeps three things in `bindings` (Composer's per-Robot persistent state) so each execution picks up where the last one left off:
@@ -30,6 +37,8 @@ The Robot keeps three things in `bindings` (Composer's per-Robot persistent stat
 - `authToken` — Futura `X-Auth-Token`, refreshed on 401
 - `lastPollTime` — the `startDate` filter for the next poll
 - `seenEventIds` — sliding window of recently-processed event IDs for dedup
+
+> **Note:** the [`robot.js`](robot.js) in this example focuses on the polling + auth + dedup loop and writes location tags from what the Futura API itself returns (`customerName`, `emitterName`). For production you also need the **MATCH** step against a Microshare device cluster — see [Adding Device Cluster Lookup](#adding-device-cluster-lookup) below.
 
 ## Futura Emitter API
 
@@ -97,11 +106,27 @@ The output matches the schema documented in [`reference/unpacked-record-structur
 **HTTP GET helper** — `httpGet()`
 Microshare's built-in `lib.post()` only supports POST. The Robot uses `Java.type('java.net.URL')` for GETs against the Futura API. This is a small, reusable helper that works in any GraalJS-based Robot — see [`reference/composer-api.md`](../../reference/composer-api.md) for more on the Robot runtime.
 
-## Optional: Enriching with Device Twin Location
+## Adding Device Cluster Lookup
 
-The example writes the location fields the Futura API itself returns (`emitterName`, `customerName`). If you maintain device twins in a Microshare **device cluster** with richer location hierarchies (Site / Building / Floor / Room / TrapID), the Robot can look up each `emitterId` in the cluster on startup and tag events with the full path.
+Cluster lookup is the **MATCH** step of the standard pipeline — it turns a vendor-supplied device ID into Microshare's full location hierarchy (Customer / Site / Building / Floor / Room / TrapID), and is what makes records appear correctly on dashboards and feed the right downstream consumers. See [`reference/pipeline-diagram.md`](../../reference/pipeline-diagram.md) for the canonical model.
 
-See [`reference/pipeline-diagram.md`](../../reference/pipeline-diagram.md) for how device clusters fit into the packed → unpacked flow. The lookup is a single `httpGet()` to `/api/device/<your-cluster-recType>?details=true&discover=true` cached in `bindings` for the lifetime of the Robot.
+This example skips the MATCH step to keep the polling/auth/dedup pattern legible. To make the Robot production-ready:
+
+1. **Register your emitters in a device cluster** in Composer on a packed recType such as `com.futura.emitter.packed`. Each entry maps an `emitterId` to its location tags. The Microshare [Deploy-M](https://play.google.com/store/apps/details?id=com.microshare.DeployM2) mobile app does this in seconds by scanning the device's QR code or label.
+
+2. **Read the cluster from the Robot:**
+
+   ```javascript
+   var TWIN_RECTYPE = 'com.futura.emitter.packed';
+   var cluster = httpGet('/api/device/' + TWIN_RECTYPE + '?details=true&discover=true', {
+       'Authorization': 'Bearer ' + auth
+   });
+   // Build emitterId → location lookup, cache in bindings for the Robot's lifetime
+   ```
+
+3. **Look up each event's `emitterId`** before mapping, and put the resulting tags in `meta.device` and on the share's record-level tags. Falling back to API-supplied values is fine for unregistered devices.
+
+Without the MATCH step, records still write — but they carry only what the vendor API returned, won't sit in the right slot in your customer/site hierarchy, and can't be filtered by location in dashboards.
 
 ## Adapting for Other REST APIs
 
