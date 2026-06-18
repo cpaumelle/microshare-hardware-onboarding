@@ -1,0 +1,15 @@
+{
+  "id": 12345,
+  "emitterId": "1234567890ABCDE",
+  "stationId": "TT0123456789",
+  "emitterName": "Warehouse Trap 1",
+  "emitterType": "TUBE_TRAP",
+  "emitterPestType": "RAT",
+  "msgTimestamp": "2026-03-24T10:15:30Z",
+  "type": "TRIGGERED",
+  "severity": "ALARM",
+  "customerId": 42,
+  "customerName": "Acme Pest Control",
+  "exterminatorId": 7,
+  "acked": false
+}

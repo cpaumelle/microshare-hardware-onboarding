@@ -1,0 +1,51 @@
+{
+    "data": null,
+    "site": {
+        "id": "565ecb9c-aaaa-bbbb-cccc-ef00b992c6bc",
+        "label": "My site",
+        "location": "45.69712,5.91195",
+        "contacts": [
+            {
+                "phone": "+33611223344",
+                "fullName": "John",
+                "email": "john@example.com",
+                "type": "CUSTOMER"
+            },
+            {
+                "phone": "+33655667788",
+                "fullName": "Jack",
+                "email": "jack@example.com",
+                "type": "MANAGER"
+            }
+        ],
+        "externalReferences": {
+            "custom_site_key": "custom_site_value"
+        }
+    },
+    "alert": null,
+    "account": {
+        "name": "Taqt"
+    },
+    "tracker": {
+        "id": "cfd45b7c-aaaa-bbbb-cccc-a304e0ec0971",
+        "slug": "865456059645117",
+        "type": "IOT",
+        "label": "Women - Building A",
+        "model": "TAQTONE",
+        "batteryLevel": 87,
+        "externalReferences": {
+            "Batiment": "45"
+        }
+    },
+    "location": "",
+    "eventType": "KEEP_ALIVE",
+    "timestamp": "2026-03-09T04:51:04.000Z",
+    "ubiqodValidity": {
+        "onSite": true,
+        "codeValid": false,
+        "scanToken": false,
+        "withPhoto": false,
+        "badgeSwiped": false,
+        "codeFromCookie": false
+    }
+}

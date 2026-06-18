@@ -1,0 +1,57 @@
+{
+    "timestamp": "2026-03-08T14:45:15.000Z",
+    "tracker": {
+        "id": "44baec02-aaaa-bbbb-cccc-31b967097dd2",
+        "label": "TaqtOne Smile",
+        "slug": "667280062733373",
+        "type": "IOT",
+        "model": "TAQTONE",
+        "batteryLevel": 90,
+        "externalReferences": {}
+    },
+    "site": {
+        "id": "565ecb9c-aaaa-bbbb-cccc-ef00b992c6bc",
+        "label": "My site",
+        "location": "45.69712,5.91195",
+        "contacts": [
+            {
+                "phone": "+33611223344",
+                "fullName": "John",
+                "email": "john@example.com",
+                "type": "CUSTOMER"
+            },
+            {
+                "phone": "+33655667788",
+                "fullName": "Jack",
+                "email": "jack@example.com",
+                "type": "MANAGER"
+            }
+        ],
+        "externalReferences": {
+            "custom_site_key": "custom_site_value"
+        }
+    },
+    "location": "",
+    "account": {
+        "name": "Taqt"
+    },
+    "eventType": "ALERT",
+    "data": null,
+    "alert": {
+        "type": "ALERT_SATISFACTION",
+        "subtype": "VOTE_THRESHOLD",
+        "count": 1,
+        "config": {
+            "rateThresh": null,
+            "voteThresh": 7
+        }
+    },
+    "ubiqodValidity": {
+        "onSite": true,
+        "badgeSwiped": false,
+        "codeValid": false,
+        "codeFromCookie": false,
+        "scanToken": false,
+        "withPhoto": false
+    }
+}

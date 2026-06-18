@@ -1,0 +1,64 @@
+{
+    "timestamp": "2025-11-26T11:33:42.000Z",
+    "tracker": {
+        "id": "15777e08-62da-413b-b612-1e08b0a80e4f",
+        "label": "My TaqtOne",
+        "slug": "867280060123456",
+        "type": "IOT",
+        "model": "TAQTONE",
+        "batteryLevel": 93,
+        "externalReferences": {
+            "custom_tracker_key": "custom_tracker_value"
+        }
+    },
+    "site": {
+        "id": "565ecb9c-31a0-4b0b-973a-ef00b992c6bc",
+        "label": "My site",
+        "location": "45.69712,5.91195",
+        "contacts": [
+            {
+                "phone": "+33611223344",
+                "fullName": "John",
+                "email": "john@example.com",
+                "type": "CUSTOMER"
+            },
+            {
+                "phone": "+33655667788",
+                "fullName": "Jack",
+                "email": "jack@example.com",
+                "type": "MANAGER"
+            }
+        ],
+        "externalReferences": {
+            "custom_site_key": "custom_site_value"
+        }
+    },
+    "location": "",
+    "account": {
+        "name": "Example Organisation"
+    },
+    "eventType": "DATA",
+    "data": {
+        "interfaceType": "TAQTONE",
+        "reference": "3",
+        "label": "Arrival",
+        "pressCount": 1,
+        "code": {
+            "label": "My User Badge",
+            "reference": "04EDEB7A3B7480",
+            "externalReferences": {
+                "custom_user_id": "1234"
+            }
+        },
+        "photo": null
+    },
+    "alert": null,
+    "ubiqodValidity": {
+        "onSite": true,
+        "badgeSwiped": true,
+        "codeValid": true,
+        "codeFromCookie": false,
+        "scanToken": false,
+        "withPhoto": false
+    }
+}
